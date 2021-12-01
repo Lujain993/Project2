@@ -1,14 +1,12 @@
 import json
 import plotly
 import pandas as pd
-
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
 from flask import Flask
-from flask import render_template, request, jsonify
+from flask import render_template, request
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import joblib
 from sqlalchemy import create_engine
 
 
@@ -26,11 +24,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:////Applications/workspace/data/disaster_messages.db')
+df = pd.read_sql_table("disasterMessages", engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load('/Applications/workspace/models/model.pkl')
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -40,9 +38,19 @@ def index():
     
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
+
+    # Vis1
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
+    # Vis2
+    columns_count = df.astype(bool).sum(axis=0).iloc[4:] / len(df)
+    columns = list(df.astype(bool).sum(axis=0).iloc[4:].index)
+
+    # Vis3
+    df['text length'] = df['message'].apply(lambda x: len(x.split()))
+    histogram = df[df['text length'] < 100].groupby('text length').count()['id']
+
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -61,6 +69,42 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=columns,
+                    y=columns_count
+                )
+            ],
+
+            'layout': {
+                'title': 'Percentage of each Category in the Dataset',
+                'yaxis': {
+                    'title': "Percentage"
+                },
+                'xaxis': {
+                    'title': "Category"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=histogram.index,
+                    y=histogram.values
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Messages Length',
+                'yaxis': {
+                    'title': "Total Messages"
+                },
+                'xaxis': {
+                    'title': "Message Length"
                 }
             }
         }
